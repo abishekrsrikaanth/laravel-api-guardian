@@ -9,6 +9,7 @@ use Throwable;
  * RFC 7807 Formatter
  *
  * Formats errors according to RFC 7807 (Problem Details for HTTP APIs).
+ *
  * @see https://tools.ietf.org/html/rfc7807
  */
 class Rfc7807Formatter extends AbstractFormatter
@@ -74,7 +75,7 @@ class Rfc7807Formatter extends AbstractFormatter
         $prefix = config('api-guardian.formats.rfc7807.type_url_prefix', 'https://api.example.com/errors/');
         $code = $this->getErrorCode($exception);
 
-        return $prefix . strtolower(str_replace('_', '-', $code));
+        return $prefix.strtolower(str_replace('_', '-', $code));
     }
 
     /**

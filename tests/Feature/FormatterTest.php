@@ -10,7 +10,7 @@ beforeEach(function () {
 });
 
 it('formats exception using JSend formatter', function () {
-    $formatter = new JSendFormatter();
+    $formatter = new JSendFormatter;
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -25,7 +25,7 @@ it('formats exception using JSend formatter', function () {
 });
 
 it('formats exception using RFC 7807 formatter', function () {
-    $formatter = new Rfc7807Formatter();
+    $formatter = new Rfc7807Formatter;
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -41,7 +41,7 @@ it('formats exception using RFC 7807 formatter', function () {
 });
 
 it('formats exception using JSON:API formatter', function () {
-    $formatter = new JsonApiFormatter();
+    $formatter = new JsonApiFormatter;
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -58,7 +58,7 @@ it('formats exception using JSON:API formatter', function () {
 });
 
 it('includes metadata in JSend format', function () {
-    $formatter = new JSendFormatter();
+    $formatter = new JSendFormatter;
     $exception = ApiException::notFound('User not found')
         ->meta(['user_id' => 123]);
 

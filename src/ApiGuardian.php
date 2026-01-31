@@ -59,10 +59,10 @@ class ApiGuardian
     protected function resolveFormatter(string $format): ErrorFormatterContract
     {
         return match ($format) {
-            'jsend' => new JSendFormatter(),
-            'rfc7807' => new Rfc7807Formatter(),
-            'jsonapi' => new JsonApiFormatter(),
-            default => new JSendFormatter(),
+            'jsend' => new JSendFormatter,
+            'rfc7807' => new Rfc7807Formatter,
+            'jsonapi' => new JsonApiFormatter,
+            default => new JSendFormatter,
         };
     }
 

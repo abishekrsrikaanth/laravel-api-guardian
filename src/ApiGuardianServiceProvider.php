@@ -32,7 +32,7 @@ class ApiGuardianServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton('api-guardian', function ($app) {
-            return new ApiGuardian();
+            return new ApiGuardian;
         });
 
         // Register the exception handler
@@ -50,7 +50,7 @@ class ApiGuardianServiceProvider extends PackageServiceProvider
         // Publish configuration
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/api-guardian.php' => config_path('api-guardian.php'),
+                __DIR__.'/../config/api-guardian.php' => config_path('api-guardian.php'),
             ], 'api-guardian-config');
         }
     }

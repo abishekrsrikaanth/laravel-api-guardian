@@ -77,7 +77,7 @@ class ErrorsListCommand extends Command
         $class = $file->getFilenameWithoutExtension();
 
         if ($namespace) {
-            return $namespace . '\\' . $class;
+            return $namespace.'\\'.$class;
         }
 
         return null;
@@ -118,6 +118,6 @@ class ErrorsListCommand extends Command
             }, $exceptions)
         );
 
-        $this->info('Total: ' . count($exceptions) . ' exception(s) found.');
+        $this->info('Total: '.count($exceptions).' exception(s) found.');
     }
 }
