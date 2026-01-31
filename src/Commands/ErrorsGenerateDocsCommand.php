@@ -40,7 +40,7 @@ class ErrorsGenerateDocsCommand extends Command
     protected function generateMarkdown(string $output): void
     {
         $content = $this->buildMarkdownContent();
-        File::put($output . '/errors.md', $content);
+        File::put($output.'/errors.md', $content);
     }
 
     protected function buildMarkdownContent(): string
@@ -100,7 +100,7 @@ class ErrorsGenerateDocsCommand extends Command
     protected function generateHtml(string $output): void
     {
         $content = $this->buildHtmlContent();
-        File::put($output . '/errors.html', $content);
+        File::put($output.'/errors.html', $content);
     }
 
     protected function buildHtmlContent(): string
@@ -153,7 +153,7 @@ HTML;
     protected function generateOpenApi(string $output): void
     {
         $content = $this->buildOpenApiContent();
-        File::put($output . '/errors.yaml', $content);
+        File::put($output.'/errors.yaml', $content);
     }
 
     protected function buildOpenApiContent(): string

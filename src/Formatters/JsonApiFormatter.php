@@ -9,6 +9,7 @@ use Throwable;
  * JSON:API Formatter
  *
  * Formats errors according to the JSON:API specification.
+ *
  * @see https://jsonapi.org/format/#errors
  */
 class JsonApiFormatter extends AbstractFormatter
@@ -86,7 +87,7 @@ class JsonApiFormatter extends AbstractFormatter
                     'title' => 'Validation Error',
                     'detail' => $message,
                     'source' => [
-                        'pointer' => '/data/attributes/' . str_replace('.', '/', $field),
+                        'pointer' => '/data/attributes/'.str_replace('.', '/', $field),
                     ],
                 ];
             }

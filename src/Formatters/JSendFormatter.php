@@ -9,6 +9,7 @@ use Throwable;
  * JSend Formatter
  *
  * Formats errors according to the JSend specification.
+ *
  * @see https://github.com/omniti-labs/jsend
  */
 class JSendFormatter extends AbstractFormatter

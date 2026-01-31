@@ -34,7 +34,7 @@ class ErrorsTestCommand extends Command
         $response = ApiGuardian::format($exception);
 
         // Display the result
-        $this->line('Response Status: ' . $response->getStatusCode());
+        $this->line('Response Status: '.$response->getStatusCode());
         $this->line('Response Body:');
         $this->line(json_encode($response->getData(), JSON_PRETTY_PRINT));
 

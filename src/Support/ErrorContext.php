@@ -38,7 +38,7 @@ class ErrorContext
      */
     protected static function generateErrorId(): string
     {
-        return 'err_' . Str::random(16);
+        return 'err_'.Str::random(16);
     }
 
     /**
