@@ -19,8 +19,7 @@ final class CircuitBreakerListCommand extends Command
 
     public function __construct(
         private readonly CircuitBreakerService $circuitBreakerService
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -59,7 +58,7 @@ final class CircuitBreakerListCommand extends Command
 
     private function displayJson(Collection $breakers): void
     {
-        $data = $breakers->map(fn($breaker): array => [
+        $data = $breakers->map(fn ($breaker): array => [
             'id' => $breaker->id,
             'identifier' => $breaker->identifier,
             'service' => $breaker->service,
