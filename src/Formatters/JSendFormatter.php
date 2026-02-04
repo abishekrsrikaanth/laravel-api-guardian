@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Formatters;
 
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -12,7 +15,7 @@ use Throwable;
  *
  * @see https://github.com/omniti-labs/jsend
  */
-class JSendFormatter extends AbstractFormatter
+final class JSendFormatter extends AbstractFormatter
 {
     /**
      * Build the error response array.
@@ -24,16 +27,16 @@ class JSendFormatter extends AbstractFormatter
         ];
 
         if ($exception instanceof ValidationException) {
-            $response['data'] = $this->buildValidationErrors($exception);
-            $response['message'] = $this->getErrorMessage($exception);
+            $response = Arr::set($response, 'data', $this->buildValidationErrors($exception));
+            $response = Arr::set($response, 'message', $this->getErrorMessage($exception));
         } else {
-            $response['message'] = $this->getErrorMessage($exception);
-            $response['code'] = $this->getErrorCode($exception);
+            $response = Arr::set($response, 'message', $this->getErrorMessage($exception));
+            $response = Arr::set($response, 'code', $this->getErrorCode($exception));
 
             // Add additional data if available
             $data = $this->buildErrorData($exception);
-            if (! empty($data)) {
-                $response['data'] = $data;
+            if ($data !== []) {
+                $response = Arr::set($response, 'data', $data);
             }
         }
 
@@ -43,7 +46,7 @@ class JSendFormatter extends AbstractFormatter
     /**
      * Get JSend status based on HTTP status code.
      */
-    protected function getStatus(int $statusCode): string
+    private function getStatus(int $statusCode): string
     {
         if ($statusCode >= 500) {
             return 'error';
@@ -59,43 +62,44 @@ class JSendFormatter extends AbstractFormatter
     /**
      * Build error data object.
      */
-    protected function buildErrorData(Throwable $exception): array
+    private function buildErrorData(Throwable $exception): array
     {
         $data = [];
 
         // Add metadata
         $meta = $this->getMetadata($exception);
-        if (! empty($meta)) {
+        if ($meta !== []) {
             $data = array_merge($data, $meta);
         }
 
-        // Add context
-        if (config('api-guardian.context.include_error_id')) {
-            $data['error_id'] = $this->buildContext($exception)['error_id'] ?? null;
+        // Add context using trait methods
+        if ($this->shouldIncludeErrorId()) {
+            $context = $this->buildContext($exception);
+            $data = Arr::set($data, 'error_id', Arr::get($context, 'error_id'));
         }
 
-        if (config('api-guardian.context.include_timestamp')) {
-            $data['timestamp'] = now()->toIso8601String();
+        if ($this->shouldIncludeTimestamp()) {
+            $data = Arr::set($data, 'timestamp', now()->toIso8601String());
         }
 
-        // Add suggestion
-        if (config('api-guardian.context.include_suggestions')) {
+        // Add suggestion using trait method
+        if ($this->shouldIncludeSuggestions()) {
             $suggestion = $this->getSuggestion($exception);
             if ($suggestion) {
-                $data['suggestion'] = $suggestion;
+                $data = Arr::set($data, 'suggestion', $suggestion);
             }
         }
 
         // Add documentation link
         $link = $this->getLink($exception);
         if ($link) {
-            $data['documentation'] = $link;
+            $data = Arr::set($data, 'documentation', $link);
         }
 
         // Add debug information
         $debug = $this->buildDebugInfo($exception);
-        if (! empty($debug)) {
-            $data['debug'] = $debug;
+        if ($debug !== []) {
+            return Arr::set($data, 'debug', $debug);
         }
 
         return $data;

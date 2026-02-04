@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Throwable;
 use WorkDoneRight\ApiGuardian\Facades\ApiGuardian;
 
-class Handler extends ExceptionHandler
+final class Handler extends ExceptionHandler
 {
     /**
      * Render an exception into an HTTP response.
@@ -21,6 +24,18 @@ class Handler extends ExceptionHandler
         }
 
         return parent::render($request, $e);
+    }
+
+    /**
+     * Report or log an exception.
+     */
+    public function report(Throwable $e): void
+    {
+        if ($this->shouldReport($e)) {
+            $this->reportToDrivers($e);
+        }
+
+        parent::report($e);
     }
 
     /**
@@ -39,11 +54,7 @@ class Handler extends ExceptionHandler
         }
 
         // Check if Accept header includes JSON
-        if ($request->header('Accept') && str_contains($request->header('Accept'), 'application/json')) {
-            return true;
-        }
-
-        return false;
+        return $request->header('Accept') && str_contains($request->header('Accept'), 'application/json');
     }
 
     /**
@@ -55,18 +66,6 @@ class Handler extends ExceptionHandler
     }
 
     /**
-     * Report or log an exception.
-     */
-    public function report(Throwable $e): void
-    {
-        if ($this->shouldReport($e)) {
-            $this->reportToDrivers($e);
-        }
-
-        parent::report($e);
-    }
-
-    /**
      * Report to configured drivers.
      */
     protected function reportToDrivers(Throwable $exception): void
@@ -74,7 +73,7 @@ class Handler extends ExceptionHandler
         $drivers = config('api-guardian.reporting.drivers', []);
 
         foreach ($drivers as $driver => $config) {
-            if (! ($config['enabled'] ?? false)) {
+            if (! (Arr::get($config, 'enabled', false))) {
                 continue;
             }
 
@@ -95,13 +94,13 @@ class Handler extends ExceptionHandler
         }
 
         // Only report critical errors if configured
-        if (($config['critical_only'] ?? false) && ! $this->isCritical($exception)) {
+        if ((Arr::get($config, 'critical_only', false)) && ! $this->isCritical($exception)) {
             return;
         }
 
         // Send webhook asynchronously
         try {
-            app('http')->post($config['url'], [
+            resolve('http')->post($config['url'], [
                 'error' => [
                     'message' => $exception->getMessage(),
                     'file' => $exception->getFile(),
@@ -109,7 +108,7 @@ class Handler extends ExceptionHandler
                     'timestamp' => now()->toIso8601String(),
                 ],
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable) {
             // Silently fail webhook reporting
         }
     }

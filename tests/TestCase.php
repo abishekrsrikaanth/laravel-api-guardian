@@ -28,10 +28,12 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/../database/migrations') as $migration) {
+        // Disable Livewire routes during tests (components don't exist yet)
+        config()->set('api-guardian.ui.frameworks.livewire.enabled', false);
+
+        // Run our package migrations
+        foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__.'/../database/migrations') as $migration) {
             (include $migration->getRealPath())->up();
-         }
-         */
+        }
     }
 }

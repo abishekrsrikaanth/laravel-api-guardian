@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Contracts;
 
 use Illuminate\Http\JsonResponse;

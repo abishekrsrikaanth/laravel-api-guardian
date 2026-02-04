@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Formatters;
 
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -12,7 +15,7 @@ use Throwable;
  *
  * @see https://jsonapi.org/format/#errors
  */
-class JsonApiFormatter extends AbstractFormatter
+final class JsonApiFormatter extends AbstractFormatter
 {
     /**
      * Build the error response array.
@@ -35,7 +38,7 @@ class JsonApiFormatter extends AbstractFormatter
     /**
      * Build a single error object.
      */
-    protected function buildErrorObject(Throwable $exception, int $statusCode): array
+    private function buildErrorObject(Throwable $exception, int $statusCode): array
     {
         $error = [
             'status' => (string) $statusCode,
@@ -44,29 +47,29 @@ class JsonApiFormatter extends AbstractFormatter
             'detail' => $this->getErrorMessage($exception),
         ];
 
-        // Add error ID
-        if (config('api-guardian.context.include_error_id')) {
-            $error['id'] = $this->buildContext($exception)['error_id'] ?? null;
+        // Add error ID using trait method
+        if ($this->shouldIncludeErrorId()) {
+            $error = Arr::set($error, 'id', Arr::get($this->buildContext($exception), 'error_id'));
         }
 
         // Add source information for debugging
         if ($this->shouldIncludeDebugInfo()) {
-            $error['source'] = [
+            $error = Arr::set($error, 'source', [
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
-            ];
+            ]);
         }
 
         // Add metadata
         $meta = $this->buildMeta($exception);
-        if (! empty($meta)) {
-            $error['meta'] = $meta;
+        if ($meta !== []) {
+            $error = Arr::set($error, 'meta', $meta);
         }
 
         // Add links
         $links = $this->buildLinks($exception);
-        if (! empty($links)) {
-            $error['links'] = $links;
+        if ($links !== []) {
+            return Arr::set($error, 'links', $links);
         }
 
         return $error;
@@ -75,7 +78,7 @@ class JsonApiFormatter extends AbstractFormatter
     /**
      * Build validation errors in JSON:API format.
      */
-    protected function buildValidationErrorsJsonApi(ValidationException $exception): array
+    private function buildValidationErrorsJsonApi(ValidationException $exception): array
     {
         $errors = [];
 
@@ -99,33 +102,33 @@ class JsonApiFormatter extends AbstractFormatter
     /**
      * Build meta object.
      */
-    protected function buildMeta(Throwable $exception): array
+    private function buildMeta(Throwable $exception): array
     {
         $meta = [];
 
         // Add custom metadata
         $customMeta = $this->getMetadata($exception);
-        if (! empty($customMeta)) {
+        if ($customMeta !== []) {
             $meta = array_merge($meta, $customMeta);
         }
 
-        // Add timestamp
-        if (config('api-guardian.context.include_timestamp')) {
-            $meta['timestamp'] = now()->toIso8601String();
+        // Add timestamp using trait method
+        if ($this->shouldIncludeTimestamp()) {
+            $meta = Arr::set($meta, 'timestamp', now()->toIso8601String());
         }
 
-        // Add suggestion
-        if (config('api-guardian.context.include_suggestions')) {
+        // Add suggestion using trait method
+        if ($this->shouldIncludeSuggestions()) {
             $suggestion = $this->getSuggestion($exception);
             if ($suggestion) {
-                $meta['suggestion'] = $suggestion;
+                $meta = Arr::set($meta, 'suggestion', $suggestion);
             }
         }
 
         // Add debug information
         $debug = $this->buildDebugInfo($exception);
-        if (! empty($debug)) {
-            $meta['debug'] = $debug;
+        if ($debug !== []) {
+            return Arr::set($meta, 'debug', $debug);
         }
 
         return $meta;
@@ -134,13 +137,13 @@ class JsonApiFormatter extends AbstractFormatter
     /**
      * Build links object.
      */
-    protected function buildLinks(Throwable $exception): array
+    private function buildLinks(Throwable $exception): array
     {
         $links = [];
 
         $link = $this->getLink($exception);
         if ($link) {
-            $links['about'] = $link;
+            return Arr::set($links, 'about', $link);
         }
 
         return $links;
@@ -149,7 +152,7 @@ class JsonApiFormatter extends AbstractFormatter
     /**
      * Get the error title.
      */
-    protected function getTitle(int $statusCode): string
+    private function getTitle(int $statusCode): string
     {
         $statusTexts = [
             400 => 'Bad Request',
@@ -164,6 +167,6 @@ class JsonApiFormatter extends AbstractFormatter
             504 => 'Gateway Timeout',
         ];
 
-        return $statusTexts[$statusCode] ?? 'Error';
+        return Arr::get($statusTexts, $statusCode, 'Error');
     }
 }

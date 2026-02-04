@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use WorkDoneRight\ApiGuardian\Exceptions\ApiException;
 
 it('can create an API exception with fluent interface', function () {

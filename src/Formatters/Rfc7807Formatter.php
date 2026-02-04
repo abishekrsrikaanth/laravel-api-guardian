@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Formatters;
 
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -12,7 +15,7 @@ use Throwable;
  *
  * @see https://tools.ietf.org/html/rfc7807
  */
-class Rfc7807Formatter extends AbstractFormatter
+final class Rfc7807Formatter extends AbstractFormatter
 {
     /**
      * Build the error response array.
@@ -26,42 +29,40 @@ class Rfc7807Formatter extends AbstractFormatter
             'detail' => $this->getErrorMessage($exception),
         ];
 
-        // Add instance identifier
-        if (config('api-guardian.context.include_error_id')) {
-            $response['instance'] = $this->buildContext($exception)['error_id'] ?? null;
+        // Add instance identifier using trait method
+        if ($this->shouldIncludeErrorId()) {
+            $response = Arr::set($response, 'instance', Arr::get($this->buildContext($exception), 'error_id'));
         }
 
         // Add validation errors
         if ($exception instanceof ValidationException) {
-            $response['errors'] = $this->buildValidationErrors($exception);
+            $response = Arr::set($response, 'errors', $this->buildValidationErrors($exception));
         }
 
         // Add metadata
         $meta = $this->getMetadata($exception);
-        if (! empty($meta)) {
-            foreach ($meta as $key => $value) {
-                $response[$key] = $value;
-            }
+        foreach ($meta as $key => $value) {
+            $response = Arr::set($response, $key, $value);
         }
 
-        // Add suggestion
-        if (config('api-guardian.context.include_suggestions')) {
+        // Add suggestion using trait method
+        if ($this->shouldIncludeSuggestions()) {
             $suggestion = $this->getSuggestion($exception);
             if ($suggestion) {
-                $response['suggestion'] = $suggestion;
+                $response = Arr::set($response, 'suggestion', $suggestion);
             }
         }
 
         // Add documentation link
         $link = $this->getLink($exception);
         if ($link) {
-            $response['help'] = $link;
+            $response = Arr::set($response, 'help', $link);
         }
 
         // Add debug information
         $debug = $this->buildDebugInfo($exception);
-        if (! empty($debug)) {
-            $response['debug'] = $debug;
+        if ($debug !== []) {
+            return Arr::set($response, 'debug', $debug);
         }
 
         return $response;
@@ -70,18 +71,18 @@ class Rfc7807Formatter extends AbstractFormatter
     /**
      * Get the error type URI.
      */
-    protected function getType(Throwable $exception): string
+    private function getType(Throwable $exception): string
     {
         $prefix = config('api-guardian.formats.rfc7807.type_url_prefix', 'https://api.example.com/errors/');
         $code = $this->getErrorCode($exception);
 
-        return $prefix.strtolower(str_replace('_', '-', $code));
+        return $prefix.mb_strtolower(str_replace('_', '-', $code));
     }
 
     /**
      * Get the error title.
      */
-    protected function getTitle(Throwable $exception, int $statusCode): string
+    private function getTitle(Throwable $exception, int $statusCode): string
     {
         if ($exception instanceof ValidationException) {
             return 'Validation Failed';
@@ -93,7 +94,7 @@ class Rfc7807Formatter extends AbstractFormatter
     /**
      * Get status text from HTTP status code.
      */
-    protected function getStatusText(int $statusCode): string
+    private function getStatusText(int $statusCode): string
     {
         $statusTexts = [
             400 => 'Bad Request',
@@ -108,6 +109,6 @@ class Rfc7807Formatter extends AbstractFormatter
             504 => 'Gateway Timeout',
         ];
 
-        return $statusTexts[$statusCode] ?? 'Error';
+        return Arr::get($statusTexts, $statusCode, 'Error');
     }
 }

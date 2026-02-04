@@ -1,16 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 use WorkDoneRight\ApiGuardian\Exceptions\ApiException;
 use WorkDoneRight\ApiGuardian\Formatters\JSendFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\JsonApiFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\Rfc7807Formatter;
+use WorkDoneRight\ApiGuardian\Support\DataMasker;
+use WorkDoneRight\ApiGuardian\Support\PIIRedactor;
 
 beforeEach(function () {
     config(['app.debug' => false]);
+
+    // Create security dependencies
+    $this->dataMasker = new DataMasker;
+    $this->piiRedactor = new PIIRedactor;
 });
 
 it('formats exception using JSend formatter', function () {
-    $formatter = new JSendFormatter;
+    $formatter = new JSendFormatter($this->dataMasker, $this->piiRedactor);
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -25,7 +33,7 @@ it('formats exception using JSend formatter', function () {
 });
 
 it('formats exception using RFC 7807 formatter', function () {
-    $formatter = new Rfc7807Formatter;
+    $formatter = new Rfc7807Formatter($this->dataMasker, $this->piiRedactor);
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -41,7 +49,7 @@ it('formats exception using RFC 7807 formatter', function () {
 });
 
 it('formats exception using JSON:API formatter', function () {
-    $formatter = new JsonApiFormatter;
+    $formatter = new JsonApiFormatter($this->dataMasker, $this->piiRedactor);
     $exception = ApiException::notFound('User not found');
 
     $response = $formatter->format($exception);
@@ -58,7 +66,7 @@ it('formats exception using JSON:API formatter', function () {
 });
 
 it('includes metadata in JSend format', function () {
-    $formatter = new JSendFormatter;
+    $formatter = new JSendFormatter($this->dataMasker, $this->piiRedactor);
     $exception = ApiException::notFound('User not found')
         ->meta(['user_id' => 123]);
 

@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use WorkDoneRight\ApiGuardian\Facades\ApiGuardian;
 
-class FormatNegotiation
+final class FormatNegotiation
 {
     /**
      * Handle an incoming request.
@@ -20,7 +22,7 @@ class FormatNegotiation
             return $next($request);
         }
 
-        // Detect format from Accept header
+        // Detect a format from Accept header
         $acceptHeader = $request->header('Accept', '');
 
         $detectedFormat = $this->detectFormat($acceptHeader);
@@ -33,11 +35,11 @@ class FormatNegotiation
     }
 
     /**
-     * Detect format from Accept header.
+     * Detect a format from Accept header.
      */
-    protected function detectFormat(string $acceptHeader): ?string
+    private function detectFormat(string $acceptHeader): ?string
     {
-        // Check for specific format hints in Accept header
+        // Check for specific format hints in the Accept header
         if (str_contains($acceptHeader, 'application/problem+json')) {
             return 'rfc7807';
         }

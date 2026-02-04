@@ -1,25 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Formatters;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesContextConfig;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesDevelopmentConfig;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesProductionConfig;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesSecurityConfig;
 use WorkDoneRight\ApiGuardian\Contracts\ErrorFormatterContract;
 use WorkDoneRight\ApiGuardian\Exceptions\ApiException;
+use WorkDoneRight\ApiGuardian\Support\DataMasker;
 use WorkDoneRight\ApiGuardian\Support\ErrorContext;
+use WorkDoneRight\ApiGuardian\Support\PIIRedactor;
 
 abstract class AbstractFormatter implements ErrorFormatterContract
 {
+    use HandlesContextConfig;
+    use HandlesDevelopmentConfig;
+    use HandlesProductionConfig;
+    use HandlesSecurityConfig;
+
+    /**
+     * Create a new formatter instance.
+     */
+    public function __construct(
+        protected DataMasker $dataMasker,
+        protected PIIRedactor $piiRedactor
+    ) {}
+
     /**
      * Format an exception into a JSON response.
      */
-    public function format(Throwable $exception, ?int $statusCode = null): JsonResponse
+    final public function format(Throwable $exception, ?int $statusCode = null): JsonResponse
     {
-        $statusCode = $statusCode ?? $this->getStatusCode($exception);
+        $statusCode ??= $this->getStatusCode($exception);
         $response = $this->buildErrorResponse($exception, $statusCode);
+
+        // Apply security sanitization
+        $response = $this->applySecurity($response);
 
         return response()->json($response, $statusCode);
     }
@@ -27,7 +52,7 @@ abstract class AbstractFormatter implements ErrorFormatterContract
     /**
      * Get the HTTP status code for an exception.
      */
-    public function getStatusCode(Throwable $exception): int
+    final public function getStatusCode(Throwable $exception): int
     {
         if ($exception instanceof ApiException) {
             return $exception->getStatusCode();
@@ -45,6 +70,24 @@ abstract class AbstractFormatter implements ErrorFormatterContract
     }
 
     /**
+     * Apply security measures to the response
+     */
+    protected function applySecurity(array $response): array
+    {
+        // Apply sensitive data masking
+        if ($this->shouldMaskSensitiveData()) {
+            $response = $this->dataMasker->maskArray($response);
+        }
+
+        // Apply PII redaction
+        if ($this->isPiiRedactionEnabled()) {
+            return $this->piiRedactor->redactArray($response);
+        }
+
+        return $response;
+    }
+
+    /**
      * Get error code from exception.
      */
     protected function getErrorCode(Throwable $exception): string
@@ -57,7 +100,7 @@ abstract class AbstractFormatter implements ErrorFormatterContract
             return 'VALIDATION_ERROR';
         }
 
-        // Generate code from exception class name
+        // Generate code from an exception class name
         $className = class_basename($exception);
 
         return Str::snake(str_replace('Exception', '', $className), '_');
@@ -68,11 +111,19 @@ abstract class AbstractFormatter implements ErrorFormatterContract
      */
     protected function getErrorMessage(Throwable $exception): string
     {
-        if (! config('app.debug') && config('api-guardian.production.hide_exception_message')) {
-            return config('api-guardian.production.generic_message', 'An error occurred.');
+        $message = $exception->getMessage() ?: 'An error occurred.';
+
+        // Apply PII redaction to message
+        if ($this->isPiiRedactionEnabled()) {
+            $message = $this->piiRedactor->redact($message);
         }
 
-        return $exception->getMessage() ?: 'An error occurred.';
+        // Hide message in production if configured
+        if ($this->shouldHideExceptionMessage()) {
+            return $this->getGenericErrorMessage();
+        }
+
+        return $message;
     }
 
     /**
@@ -80,15 +131,7 @@ abstract class AbstractFormatter implements ErrorFormatterContract
      */
     protected function buildContext(Throwable $exception): array
     {
-        return ErrorContext::build($exception);
-    }
-
-    /**
-     * Check if we should include debug information.
-     */
-    protected function shouldIncludeDebugInfo(): bool
-    {
-        return config('app.debug') && config('api-guardian.development.enabled', false);
+        return ErrorContext::build();
     }
 
     /**
@@ -101,27 +144,36 @@ abstract class AbstractFormatter implements ErrorFormatterContract
         }
 
         $debug = [
-            'exception' => get_class($exception),
+            'exception' => $exception::class,
             'file' => $exception->getFile(),
             'line' => $exception->getLine(),
         ];
 
-        if (config('api-guardian.context.include_trace')) {
-            $debug['trace'] = collect($exception->getTrace())
+        if ($this->shouldIncludeTraceInfo()) {
+            $trace = collect($exception->getTrace())
                 ->map(function ($trace) {
-                    return [
-                        'file' => $trace['file'] ?? 'unknown',
-                        'line' => $trace['line'] ?? 0,
-                        'function' => $trace['function'] ?? 'unknown',
-                        'class' => $trace['class'] ?? null,
+                    $item = [
+                        'file' => Arr::get($trace, 'file', 'unknown'),
+                        'line' => Arr::get($trace, 'line', 0),
+                        'function' => Arr::get($trace, 'function', 'unknown'),
+                        'class' => Arr::get($trace, 'class'),
                     ];
+
+                    // Mask sensitive data in function arguments if present
+                    if (Arr::has($trace, 'args')) {
+                        return Arr::set($item, 'args', $this->dataMasker->maskArray(Arr::get($trace, 'args')));
+                    }
+
+                    return $item;
                 })
                 ->take(10)
                 ->toArray();
+
+            $debug = Arr::set($debug, 'trace', $trace);
         }
 
-        if (config('api-guardian.development.include_exception_chain') && $exception->getPrevious()) {
-            $debug['previous'] = $this->buildPreviousExceptions($exception->getPrevious());
+        if ($this->shouldIncludeExceptionChain() && $exception->getPrevious()) {
+            return Arr::set($debug, 'previous', $this->buildPreviousExceptions($exception->getPrevious()));
         }
 
         return $debug;
@@ -136,15 +188,22 @@ abstract class AbstractFormatter implements ErrorFormatterContract
             return [];
         }
 
+        $message = $exception->getMessage();
+
+        // Redact PII from exception messages
+        if ($this->isPiiRedactionEnabled()) {
+            $message = $this->piiRedactor->redact($message);
+        }
+
         $data = [
-            'exception' => get_class($exception),
-            'message' => $exception->getMessage(),
+            'exception' => $exception::class,
+            'message' => $message,
             'file' => $exception->getFile(),
             'line' => $exception->getLine(),
         ];
 
-        if ($previous = $exception->getPrevious()) {
-            $data['previous'] = $this->buildPreviousExceptions($previous, $depth + 1);
+        if (($previous = $exception->getPrevious()) instanceof Throwable) {
+            return Arr::set($data, 'previous', $this->buildPreviousExceptions($previous, $depth + 1));
         }
 
         return $data;
@@ -156,7 +215,14 @@ abstract class AbstractFormatter implements ErrorFormatterContract
     protected function getMetadata(Throwable $exception): array
     {
         if ($exception instanceof ApiException) {
-            return $exception->getMeta();
+            $meta = $exception->getMeta();
+
+            // Mask sensitive data in metadata
+            if ($this->shouldMaskSensitiveData()) {
+                return $this->dataMasker->maskArray($meta);
+            }
+
+            return $meta;
         }
 
         return [];
@@ -168,7 +234,14 @@ abstract class AbstractFormatter implements ErrorFormatterContract
     protected function getSuggestion(Throwable $exception): ?string
     {
         if ($exception instanceof ApiException) {
-            return $exception->getSuggestion();
+            $suggestion = $exception->getSuggestion();
+
+            // Redact PII from suggestions
+            if ($suggestion && $this->isPiiRedactionEnabled()) {
+                return $this->piiRedactor->redact($suggestion);
+            }
+
+            return $suggestion;
         }
 
         return null;
@@ -205,13 +278,18 @@ abstract class AbstractFormatter implements ErrorFormatterContract
      */
     protected function formatValidationField(string $field, array $messages): array|string
     {
-        if (! config('api-guardian.validation.include_error_codes')) {
-            return $messages[0] ?? 'Validation failed';
+        // Redact PII from validation messages
+        if ($this->isPiiRedactionEnabled()) {
+            $messages = array_map($this->piiRedactor->redact(...), $messages);
+        }
+
+        if (! $this->shouldIncludeErrorCodes()) {
+            return Arr::first($messages, default: 'Validation failed');
         }
 
         return [
-            'message' => $messages[0] ?? 'Validation failed',
-            'code' => $this->generateValidationCode($field, $messages[0] ?? ''),
+            'message' => Arr::first($messages, default: 'Validation failed'),
+            'code' => $this->generateValidationCode($field, Arr::first($messages, default: '')),
         ];
     }
 
@@ -220,7 +298,7 @@ abstract class AbstractFormatter implements ErrorFormatterContract
      */
     protected function generateValidationCode(string $field, string $message): string
     {
-        // Try to extract validation rule from message
+        // Try to extract validation rule from a message
         if (str_contains($message, 'required')) {
             return 'FIELD_REQUIRED';
         }

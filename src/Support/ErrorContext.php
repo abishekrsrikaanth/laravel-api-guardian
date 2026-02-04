@@ -1,57 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian\Support;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Throwable;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesContextConfig;
+use WorkDoneRight\ApiGuardian\Concerns\Config\HandlesSecurityConfig;
 
-class ErrorContext
+final class ErrorContext
 {
+    use HandlesContextConfig;
+    use HandlesSecurityConfig;
+
     /**
      * Build error context information.
      */
-    public static function build(Throwable $exception): array
+    public static function build(): array
     {
+        $instance = new self;
         $context = [];
-
-        if (config('api-guardian.context.include_error_id')) {
-            $context['error_id'] = static::generateErrorId();
+        if ($instance->shouldIncludeErrorId()) {
+            $context = Arr::set($context, 'error_id', self::generateErrorId());
         }
-
-        if (config('api-guardian.context.include_timestamp')) {
-            $context['timestamp'] = now()->toIso8601String();
+        if ($instance->shouldIncludeTimestamp()) {
+            $context = Arr::set($context, 'timestamp', now()->toIso8601String());
         }
-
-        if (config('api-guardian.context.include_request_id')) {
-            $context['request_id'] = request()->header('X-Request-ID') ?? Str::uuid()->toString();
+        if ($instance->shouldIncludeRequestId()) {
+            $context = Arr::set($context, 'request_id', request()->header('X-Request-ID') ?? Str::uuid()->toString());
         }
-
-        if (config('api-guardian.context.include_user_info') && auth()->check()) {
-            $context['user'] = static::buildUserInfo();
+        if ($instance->shouldIncludeUserInfo() && auth()->check()) {
+            return Arr::set($context, 'user', self::buildUserInfo());
         }
 
         return $context;
-    }
-
-    /**
-     * Generate a unique error ID.
-     */
-    protected static function generateErrorId(): string
-    {
-        return 'err_'.Str::random(16);
-    }
-
-    /**
-     * Build user information (without sensitive data).
-     */
-    protected static function buildUserInfo(): array
-    {
-        $user = auth()->user();
-
-        return [
-            'id' => $user->id ?? null,
-            'type' => class_basename($user),
-        ];
     }
 
     /**
@@ -74,15 +57,25 @@ class ErrorContext
      */
     public static function sanitize(array $data): array
     {
-        $patterns = config('api-guardian.security.mask_patterns', []);
+        $instance = new self;
+
+        if (! $instance->shouldMaskSensitiveData()) {
+            return $data;
+        }
+
+        $patterns = $instance->getSensitiveDataPatterns();
+
+        if ($patterns === []) {
+            return $data;
+        }
 
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $data[$key] = static::sanitize($value);
+                $data = Arr::set($data, $key, self::sanitize($value));
             } elseif (is_string($value)) {
                 foreach ($patterns as $pattern) {
-                    if (str_contains(strtolower($key), strtolower($pattern))) {
-                        $data[$key] = '***REDACTED***';
+                    if (str_contains(mb_strtolower((string) $key), mb_strtolower((string) $pattern))) {
+                        $data = Arr::set($data, $key, '***REDACTED***');
                         break;
                     }
                 }
@@ -97,16 +90,39 @@ class ErrorContext
      */
     public static function redactPii(string $text): string
     {
-        if (! config('api-guardian.security.pii_redaction.enabled')) {
+        $instance = new self;
+
+        if (! $instance->isPiiRedactionEnabled()) {
             return $text;
         }
 
-        $patterns = config('api-guardian.security.pii_redaction.patterns', []);
+        $patterns = $instance->getPiiRedactionPatterns();
 
         foreach ($patterns as $type => $pattern) {
-            $text = preg_replace($pattern, "[$type:REDACTED]", $text);
+            $text = preg_replace($pattern, "[$type:REDACTED]", (string) $text);
         }
 
         return $text;
+    }
+
+    /**
+     * Generate a unique error ID.
+     */
+    private static function generateErrorId(): string
+    {
+        return 'err_'.Str::random(16);
+    }
+
+    /**
+     * Build user information (without sensitive data).
+     */
+    private static function buildUserInfo(): array
+    {
+        $user = auth()->user();
+
+        return [
+            'id' => Arr::get($user, 'id'),
+            'type' => class_basename($user),
+        ];
     }
 }

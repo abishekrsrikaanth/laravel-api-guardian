@@ -1,69 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace WorkDoneRight\ApiGuardian;
 
 use Illuminate\Http\JsonResponse;
+use Throwable;
 use WorkDoneRight\ApiGuardian\Contracts\ErrorFormatterContract;
+use WorkDoneRight\ApiGuardian\Formatters\GraphQLFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\JSendFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\JsonApiFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\Rfc7807Formatter;
 
-class ApiGuardian
+final class ApiGuardian
 {
-    protected ?ErrorFormatterContract $formatter = null;
+    private ?ErrorFormatterContract $formatter = null;
 
-    protected string $defaultFormat;
+    private readonly string $defaultFormat;
 
     public function __construct()
     {
         $this->defaultFormat = config('api-guardian.default_format', 'jsend');
-    }
-
-    /**
-     * Set the error formatter.
-     */
-    public function useFormatter(string|ErrorFormatterContract $formatter): self
-    {
-        if (is_string($formatter)) {
-            $this->formatter = $this->resolveFormatter($formatter);
-        } else {
-            $this->formatter = $formatter;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the current error formatter.
-     */
-    public function getFormatter(): ErrorFormatterContract
-    {
-        if (! $this->formatter) {
-            $this->formatter = $this->resolveFormatter($this->defaultFormat);
-        }
-
-        return $this->formatter;
-    }
-
-    /**
-     * Format an exception into a JSON response.
-     */
-    public function format(\Throwable $exception, ?int $statusCode = null): JsonResponse
-    {
-        return $this->getFormatter()->format($exception, $statusCode);
-    }
-
-    /**
-     * Resolve a formatter by name.
-     */
-    protected function resolveFormatter(string $format): ErrorFormatterContract
-    {
-        return match ($format) {
-            'jsend' => new JSendFormatter,
-            'rfc7807' => new Rfc7807Formatter,
-            'jsonapi' => new JsonApiFormatter,
-            default => new JSendFormatter,
-        };
     }
 
     /**
@@ -79,7 +36,7 @@ class ApiGuardian
      */
     public static function notFound(string $message = 'Resource not found'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(404)
             ->code('RESOURCE_NOT_FOUND');
     }
@@ -89,7 +46,7 @@ class ApiGuardian
      */
     public static function unauthorized(string $message = 'Unauthorized'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(401)
             ->code('UNAUTHORIZED');
     }
@@ -99,7 +56,7 @@ class ApiGuardian
      */
     public static function forbidden(string $message = 'Forbidden'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(403)
             ->code('FORBIDDEN');
     }
@@ -109,7 +66,7 @@ class ApiGuardian
      */
     public static function validationFailed(string $message = 'Validation failed'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(422)
             ->code('VALIDATION_FAILED');
     }
@@ -119,7 +76,7 @@ class ApiGuardian
      */
     public static function serverError(string $message = 'Internal server error'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(500)
             ->code('SERVER_ERROR');
     }
@@ -129,7 +86,7 @@ class ApiGuardian
      */
     public static function badRequest(string $message = 'Bad request'): Exceptions\ApiException
     {
-        return static::exception($message)
+        return self::exception($message)
             ->statusCode(400)
             ->code('BAD_REQUEST');
     }
@@ -139,7 +96,7 @@ class ApiGuardian
      */
     public static function rateLimitExceeded(string $message = 'Rate limit exceeded', ?int $retryAfter = null): Exceptions\ApiException
     {
-        $exception = static::exception($message)
+        $exception = self::exception($message)
             ->statusCode(429)
             ->code('RATE_LIMIT_EXCEEDED');
 
@@ -148,5 +105,51 @@ class ApiGuardian
         }
 
         return $exception;
+    }
+
+    /**
+     * Set the error formatter.
+     */
+    public function useFormatter(string|ErrorFormatterContract $formatter): self
+    {
+        $this->formatter = is_string($formatter) ? $this->resolveFormatter($formatter) : $formatter;
+
+        return $this;
+    }
+
+    /**
+     * Get the current error formatter.
+     */
+    public function getFormatter(): ErrorFormatterContract
+    {
+        if (! $this->formatter instanceof ErrorFormatterContract) {
+            $this->formatter = $this->resolveFormatter($this->defaultFormat);
+        }
+
+        return $this->formatter;
+    }
+
+    /**
+     * Format an exception into a JSON response.
+     */
+    public function format(Throwable $exception, ?int $statusCode = null): JsonResponse
+    {
+        return $this->getFormatter()->format($exception, $statusCode);
+    }
+
+    /**
+     * Resolve a formatter by name.
+     */
+    private function resolveFormatter(string $format): ErrorFormatterContract
+    {
+        $formatterClass = match ($format) {
+            'jsend' => JSendFormatter::class,
+            'rfc7807' => Rfc7807Formatter::class,
+            'jsonapi' => JsonApiFormatter::class,
+            'graphql' => GraphQLFormatter::class,
+            default => JSendFormatter::class,
+        };
+
+        return resolve($formatterClass);
     }
 }
