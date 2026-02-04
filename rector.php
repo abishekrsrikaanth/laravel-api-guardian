@@ -8,10 +8,10 @@ use Rector\Php73\Rector\FuncCall\JsonThrowOnErrorRector;
 
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/src',
-        __DIR__ . '/database',
-        __DIR__ . '/config',
-        __DIR__ . '/routes',
+        __DIR__.'/src',
+        __DIR__.'/database',
+        __DIR__.'/config',
+        __DIR__.'/routes',
     ])
     ->withPreparedSets(
         deadCode: true,
@@ -23,7 +23,7 @@ return RectorConfig::configure()
         earlyReturn: true,
     )
     ->withRules([
-        JsonThrowOnErrorRector::class
+        JsonThrowOnErrorRector::class,
     ])
     ->withPhpSets(
         php84: true,

@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Throwable;
 use WorkDoneRight\ApiGuardian\Models\CircuitBreaker;
 use WorkDoneRight\ApiGuardian\Services\CircuitBreakerService;
+
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
@@ -27,8 +28,7 @@ final class CircuitBreakerResetCommand extends Command
 
     public function __construct(
         private readonly CircuitBreakerService $circuitBreakerService
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -41,7 +41,7 @@ final class CircuitBreakerResetCommand extends Command
         $force = $this->option('force');
 
         // Validate options
-        if (!$id && !$service && !$state && !$all) {
+        if (! $id && ! $service && ! $state && ! $all) {
             error('Please specify --id, --service, --state, or --all');
 
             return self::FAILURE;
@@ -63,14 +63,14 @@ final class CircuitBreakerResetCommand extends Command
         $this->displayBreakers($breakers);
 
         // Confirm reset using Laravel Prompts
-        if (!$force) {
+        if (! $force) {
             $confirmed = confirm(
                 label: 'Do you want to reset these circuit breakers?',
                 default: true,
                 hint: 'This will reset failure/success counts and change state to closed.'
             );
 
-            if (!$confirmed) {
+            if (! $confirmed) {
                 info('Operation cancelled.');
 
                 return self::SUCCESS;
@@ -142,7 +142,7 @@ final class CircuitBreakerResetCommand extends Command
                 '  • %s (<fg=%s>%s</>) - Failures: %d/%d',
                 $breaker->service,
                 $stateColor,
-                mb_strtoupper((string)$breaker->state),
+                mb_strtoupper((string) $breaker->state),
                 $breaker->failure_count,
                 $breaker->failure_threshold
             ));

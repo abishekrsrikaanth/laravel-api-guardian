@@ -6,7 +6,7 @@ namespace WorkDoneRight\ApiGuardian\Commands;
 
 use Illuminate\Console\Command;
 
-class VersionCommand extends Command
+final class VersionCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -62,9 +62,9 @@ class VersionCommand extends Command
      */
     protected function getComposerData(): array
     {
-        $composerPath = __DIR__ . '/../../composer.json';
+        $composerPath = __DIR__.'/../../composer.json';
 
-        if (!file_exists($composerPath)) {
+        if (! file_exists($composerPath)) {
             return [];
         }
 

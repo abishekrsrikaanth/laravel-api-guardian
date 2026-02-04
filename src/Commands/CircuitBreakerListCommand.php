@@ -19,8 +19,7 @@ final class CircuitBreakerListCommand extends Command
 
     public function __construct(
         private readonly CircuitBreakerService $circuitBreakerService
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -59,7 +58,7 @@ final class CircuitBreakerListCommand extends Command
 
     private function displayJson(Collection $breakers): void
     {
-        $data = $breakers->map(fn($breaker): array => [
+        $data = $breakers->map(fn ($breaker): array => [
             'id' => $breaker->id,
             'identifier' => $breaker->identifier,
             'service' => $breaker->service,
@@ -101,7 +100,7 @@ final class CircuitBreakerListCommand extends Command
     private function displayTable(Collection $breakers): void
     {
         $rows = [];
-        
+
         foreach ($breakers as $breaker) {
             $stateColor = match ($breaker->state) {
                 'closed' => 'green',
@@ -111,9 +110,9 @@ final class CircuitBreakerListCommand extends Command
             };
 
             $rows[] = [
-                mb_substr((string)$breaker->identifier, 0, 20),
+                mb_substr((string) $breaker->identifier, 0, 20),
                 $breaker->service,
-                "<fg={$stateColor}>" . mb_strtoupper((string)$breaker->state) . '</>',
+                "<fg={$stateColor}>".mb_strtoupper((string) $breaker->state).'</>',
                 "{$breaker->failure_count}/{$breaker->failure_threshold}",
                 "{$breaker->success_count}/{$breaker->success_threshold}",
                 $breaker->last_failure_at?->diffForHumans() ?? 'Never',

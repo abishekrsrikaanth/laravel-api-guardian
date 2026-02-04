@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace WorkDoneRight\ApiGuardian\Http\Controllers\Api;
 
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use WorkDoneRight\ApiGuardian\Models\CircuitBreaker;
 
-class HealthController
+final class HealthController
 {
     /**
      * Get system health status.
@@ -34,7 +35,7 @@ class HealthController
     /**
      * Check database connection.
      */
-    protected function checkDatabase(): array
+    private function checkDatabase(): array
     {
         try {
             DB::connection()->getPdo();
@@ -43,7 +44,7 @@ class HealthController
                 'healthy' => true,
                 'message' => 'Database connection successful',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'healthy' => false,
                 'message' => 'Database connection failed',
@@ -55,7 +56,7 @@ class HealthController
     /**
      * Check cache system.
      */
-    protected function checkCache(): array
+    private function checkCache(): array
     {
         try {
             $key = 'api-guardian-health-check';
@@ -69,7 +70,7 @@ class HealthController
                 'healthy' => $retrieved === $value,
                 'message' => $retrieved === $value ? 'Cache working' : 'Cache test failed',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'healthy' => false,
                 'message' => 'Cache system failed',
@@ -81,7 +82,7 @@ class HealthController
     /**
      * Check circuit breaker status.
      */
-    protected function checkCircuitBreakers(): array
+    private function checkCircuitBreakers(): array
     {
         try {
             $breakers = CircuitBreaker::all();
@@ -107,7 +108,7 @@ class HealthController
                     'can_attempt' => $breaker->canAttempt(),
                 ])->values()->toArray(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'healthy' => false,
                 'message' => 'Circuit breaker check failed',
