@@ -110,9 +110,9 @@ final class CircuitBreakerListCommand extends Command
             };
 
             $rows[] = [
-                mb_substr((string)$breaker->identifier, 0, 20),
+                mb_substr((string) $breaker->identifier, 0, 20),
                 $breaker->service,
-                sprintf('<fg=%s>', $stateColor) . mb_strtoupper((string)$breaker->state) . '</>',
+                sprintf('<fg=%s>', $stateColor).mb_strtoupper((string) $breaker->state).'</>',
                 sprintf('%s/%s', $breaker->failure_count, $breaker->failure_threshold),
                 sprintf('%s/%s', $breaker->success_count, $breaker->success_threshold),
                 $breaker->last_failure_at?->diffForHumans() ?? 'Never',
