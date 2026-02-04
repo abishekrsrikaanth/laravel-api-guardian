@@ -79,6 +79,8 @@ final class CircuitBreakerService
 
     /**
      * Get circuit breaker statistics.
+     *
+     * @return array<string, mixed>
      */
     public function getStats(): array
     {
@@ -96,6 +98,8 @@ final class CircuitBreakerService
      *
      * Note: This is a simplified version. A full implementation would require
      * a separate state_changes table to track historical state transitions.
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function getHistory(string $id): array
     {

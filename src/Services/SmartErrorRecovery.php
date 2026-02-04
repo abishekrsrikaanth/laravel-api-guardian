@@ -7,6 +7,7 @@ namespace WorkDoneRight\ApiGuardian\Services;
 use Closure;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use WorkDoneRight\ApiGuardian\Contracts\RecoveryStrategyContract;
 use WorkDoneRight\ApiGuardian\Models\CircuitBreaker;
 
@@ -147,7 +148,7 @@ final class SmartErrorRecovery implements RecoveryStrategyContract
                     throw $exception;
                 }
 
-                \Illuminate\Support\Sleep::usleep($delay * 1000); // Convert to microseconds
+                Sleep::usleep($delay * 1000); // Convert to microseconds
                 $delay *= $backoffMultiplier;
 
                 Log::warning('Retrying operation after transient error', [

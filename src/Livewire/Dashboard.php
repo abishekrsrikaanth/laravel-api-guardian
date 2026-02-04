@@ -34,6 +34,8 @@ final class Dashboard extends Component
 
     /**
      * Get dashboard statistics.
+     *
+     * @return array<string, mixed[]>
      */
     public function getStatsProperty(): array
     {

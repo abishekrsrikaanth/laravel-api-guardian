@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WorkDoneRight\ApiGuardian\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Pagination\LengthAwarePaginator;
 use WorkDoneRight\ApiGuardian\Services\ErrorService;
 
 use function Laravel\Prompts\info;
@@ -116,9 +117,11 @@ final class ErrorsListCommand extends Command
         if ($status !== 'all') {
             $filters['status'] = $status;
         }
+
         if ($statusCode !== '' && $statusCode !== '0') {
             $filters['status_code'] = (int) $statusCode;
         }
+
         if ($days !== '' && $days !== '0') {
             $filters['from_date'] = now()->subDays((int) $days)->toDateString();
         }
@@ -144,6 +147,9 @@ final class ErrorsListCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @return array<string, bool|int|string|mixed[]|null>
+     */
     private function buildFilters(): array
     {
         $filters = [];
@@ -167,7 +173,7 @@ final class ErrorsListCommand extends Command
         return $filters;
     }
 
-    private function displayTable(\Illuminate\Pagination\LengthAwarePaginator $errors): void
+    private function displayTable(LengthAwarePaginator $errors): void
     {
         $rows = [];
 
@@ -188,7 +194,7 @@ final class ErrorsListCommand extends Command
         );
     }
 
-    private function displayCompact(\Illuminate\Pagination\LengthAwarePaginator $errors): void
+    private function displayCompact(LengthAwarePaginator $errors): void
     {
         foreach ($errors as $error) {
             $status = $error->resolved_at ? '✓' : '✗';
@@ -203,7 +209,7 @@ final class ErrorsListCommand extends Command
         }
     }
 
-    private function displayJson(\Illuminate\Pagination\LengthAwarePaginator $errors): void
+    private function displayJson(LengthAwarePaginator $errors): void
     {
         $data = $errors->map(fn ($error): array => [
             'error_id' => $error->error_id,
@@ -218,14 +224,14 @@ final class ErrorsListCommand extends Command
         $this->line(json_encode($data, JSON_PRETTY_PRINT));
     }
 
-    private function displaySummary(\Illuminate\Pagination\LengthAwarePaginator $errors): void
+    private function displaySummary(LengthAwarePaginator $errors): void
     {
         $total = $errors->count();
         $resolved = $errors->where('resolved_at', '!=')->count();
         $unresolved = $total - $resolved;
 
         $this->newLine();
-        info("Total: {$total} | Resolved: {$resolved} | Unresolved: {$unresolved}");
+        info(sprintf('Total: %d | Resolved: %d | Unresolved: %d', $total, $resolved, $unresolved));
 
         // Top status code
         $topStatusCode = $errors->groupBy('status_code')
@@ -234,7 +240,7 @@ final class ErrorsListCommand extends Command
             ->first();
 
         if ($topStatusCode) {
-            $this->line("Most common status code: {$topStatusCode}");
+            $this->line('Most common status code: '.$topStatusCode);
         }
     }
 

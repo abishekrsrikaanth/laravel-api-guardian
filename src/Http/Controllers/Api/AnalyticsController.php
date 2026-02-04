@@ -135,7 +135,7 @@ final class AnalyticsController extends Controller
         $days = (int) $request->get('days', 7);
         $type = $request->get('type', 'errors'); // errors, analytics, trends
 
-        $filename = "api-guardian-{$type}-".now()->format('Y-m-d').".{$format}";
+        $filename = sprintf('api-guardian-%s-', $type).now()->format('Y-m-d').('.'.$format);
 
         if ($format === 'csv') {
             return $this->exportToCsv($type, $days, $filename);
@@ -150,7 +150,7 @@ final class AnalyticsController extends Controller
 
         return ResponseFacade::json($data)
             ->header('Content-Type', 'application/json')
-            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+            ->header('Content-Disposition', sprintf('attachment; filename="%s"', $filename));
     }
 
     /**
@@ -168,7 +168,7 @@ final class AnalyticsController extends Controller
 
         return ResponseFacade::make($csv, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
         ]);
     }
 

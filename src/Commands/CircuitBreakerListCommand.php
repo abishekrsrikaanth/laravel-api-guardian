@@ -72,7 +72,7 @@ final class CircuitBreakerListCommand extends Command
             'next_attempt_at' => $breaker->next_attempt_at?->toIso8601String(),
         ]);
 
-        $this->line(json_encode($data, JSON_PRETTY_PRINT));
+        $this->line(json_encode($data, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
     }
 
     private function displayCompact(Collection $breakers): void
@@ -101,7 +101,7 @@ final class CircuitBreakerListCommand extends Command
     private function displayTable(Collection $breakers): void
     {
         $rows = [];
-        
+
         foreach ($breakers as $breaker) {
             $stateColor = match ($breaker->state) {
                 'closed' => 'green',
@@ -113,9 +113,9 @@ final class CircuitBreakerListCommand extends Command
             $rows[] = [
                 mb_substr((string)$breaker->identifier, 0, 20),
                 $breaker->service,
-                "<fg={$stateColor}>" . mb_strtoupper((string)$breaker->state) . '</>',
-                "{$breaker->failure_count}/{$breaker->failure_threshold}",
-                "{$breaker->success_count}/{$breaker->success_threshold}",
+                sprintf('<fg=%s>', $stateColor) . mb_strtoupper((string)$breaker->state) . '</>',
+                sprintf('%s/%s', $breaker->failure_count, $breaker->failure_threshold),
+                sprintf('%s/%s', $breaker->success_count, $breaker->success_threshold),
                 $breaker->last_failure_at?->diffForHumans() ?? 'Never',
                 $breaker->next_attempt_at?->diffForHumans() ?? 'N/A',
             ];
@@ -135,11 +135,11 @@ final class CircuitBreakerListCommand extends Command
         $open = $breakers->where('state', 'open')->count();
 
         $this->newLine();
-        $this->info("Total: {$total} | Closed: {$closed} | Half-Open: {$halfOpen} | Open: {$open}");
+        $this->info(sprintf('Total: %d | Closed: %d | Half-Open: %d | Open: %d', $total, $closed, $halfOpen, $open));
 
         if ($open > 0) {
             $this->newLine();
-            $this->warn("⚠️  {$open} circuit breaker(s) are currently OPEN!");
+            $this->warn(sprintf('⚠️  %d circuit breaker(s) are currently OPEN!', $open));
             $this->line('   Run `php artisan circuit-breaker:reset --state=open` to reset them.');
         }
     }

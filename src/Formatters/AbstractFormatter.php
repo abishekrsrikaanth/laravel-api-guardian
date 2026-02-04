@@ -302,12 +302,15 @@ abstract class AbstractFormatter implements ErrorFormatterContract
         if (str_contains($message, 'required')) {
             return 'FIELD_REQUIRED';
         }
+
         if (str_contains($message, 'email')) {
             return 'INVALID_EMAIL';
         }
+
         if (str_contains($message, 'numeric')) {
             return 'MUST_BE_NUMERIC';
         }
+
         if (str_contains($message, 'string')) {
             return 'MUST_BE_STRING';
         }

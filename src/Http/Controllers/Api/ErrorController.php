@@ -108,7 +108,7 @@ final class ErrorController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} errors marked as resolved",
+            'message' => $count.' errors marked as resolved',
             'count' => $count,
         ]);
     }
@@ -127,7 +127,7 @@ final class ErrorController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} errors deleted successfully",
+            'message' => $count.' errors deleted successfully',
             'count' => $count,
         ]);
     }

@@ -6,7 +6,7 @@ namespace WorkDoneRight\ApiGuardian\Commands;
 
 use Illuminate\Console\Command;
 
-class VersionCommand extends Command
+final class VersionCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -50,7 +50,7 @@ class VersionCommand extends Command
         if (config('api-guardian.dashboard.enabled')) {
             $this->components->info('Dashboard URL:');
             $prefix = config('api-guardian.ui.frameworks.livewire.route_prefix', 'api-guardian');
-            $this->line("  <fg=blue>http://your-domain.com/{$prefix}/dashboard</>");
+            $this->line(sprintf('  <fg=blue>http://your-domain.com/%s/dashboard</>', $prefix));
             $this->newLine();
         }
 
@@ -60,11 +60,11 @@ class VersionCommand extends Command
     /**
      * Get composer.json data.
      */
-    protected function getComposerData(): array
+    private function getComposerData(): array
     {
-        $composerPath = __DIR__ . '/../../composer.json';
+        $composerPath = __DIR__.'/../../composer.json';
 
-        if (!file_exists($composerPath)) {
+        if (! file_exists($composerPath)) {
             return [];
         }
 

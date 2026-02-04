@@ -82,7 +82,7 @@ final class ErrorsTestCommand extends Command
         $message = text(
             label: 'Enter error message',
             placeholder: 'Custom test message',
-            default: "Test message for {$code}"
+            default: 'Test message for '.$code
         );
 
         $format = select(
@@ -114,15 +114,15 @@ final class ErrorsTestCommand extends Command
         $format = $customFormat ?? $this->option('format');
         $testLogging = $customTestLogging ?? $this->option('log');
 
-        info("Testing error code: <fg=cyan>{$code}</>");
-        info("Format: <fg=yellow>{$format}</>");
+        info(sprintf('Testing error code: <fg=cyan>%s</>', $code));
+        info(sprintf('Format: <fg=yellow>%s</>', $format));
         $this->newLine();
 
         // Create test exception
         try {
             $exception = $this->createTestException($code, $message);
-        } catch (Throwable $e) {
-            error("Failed to create exception: {$e->getMessage()}");
+        } catch (Throwable $throwable) {
+            error('Failed to create exception: '.$throwable->getMessage());
 
             return self::FAILURE;
         }
@@ -163,9 +163,9 @@ final class ErrorsTestCommand extends Command
         $formatters = ['jsend', 'rfc7807', 'jsonapi'];
 
         foreach ($codes as $code => $expectedStatus) {
-            $this->line("Testing <fg=cyan>{$code}</> (expected status: {$expectedStatus})");
+            $this->line(sprintf('Testing <fg=cyan>%s</> (expected status: %s)', $code, $expectedStatus));
 
-            $exception = $this->createTestException($code, "Test message for {$code}");
+            $exception = $this->createTestException($code, 'Test message for '.$code);
 
             foreach ($formatters as $formatter) {
                 ApiGuardian::useFormatter($formatter);
@@ -174,7 +174,7 @@ final class ErrorsTestCommand extends Command
                 $statusMatch = $response->getStatusCode() === $expectedStatus ? '✓' : '✗';
                 $color = $statusMatch === '✓' ? 'green' : 'red';
 
-                $this->line("  {$formatter}: <fg={$color}>{$statusMatch}</> (status: {$response->getStatusCode()})");
+                $this->line(sprintf('  %s: <fg=%s>%s</> (status: %d)', $formatter, $color, $statusMatch, $response->getStatusCode()));
             }
 
             $this->newLine();
@@ -213,7 +213,7 @@ final class ErrorsTestCommand extends Command
         // Syntax highlight
         $highlighted = preg_replace_callback(
             '/"([^"]+)"\s*:\s*("[^"]*"|\d+|true|false|null)/',
-            fn ($matches): string => "<fg=green>\"{$matches[1]}\"</> : <fg=cyan>{$matches[2]}</>",
+            fn ($matches): string => sprintf('<fg=green>"%s"</> : <fg=cyan>%s</>', $matches[1], $matches[2]),
             $json
         );
 
@@ -236,9 +236,9 @@ final class ErrorsTestCommand extends Command
             if ($newCount > $initialCount) {
                 $latestError = ApiError::latest()->first();
                 info('✅ Error logged successfully');
-                $this->line("   Error ID: <fg=cyan>{$latestError->error_id}</>");
-                $this->line("   Message: {$latestError->message}");
-                $this->line("   Status Code: {$latestError->status_code}");
+                $this->line(sprintf('   Error ID: <fg=cyan>%s</>', $latestError->error_id));
+                $this->line('   Message: '.$latestError->message);
+                $this->line('   Status Code: '.$latestError->status_code);
 
                 // Clean up test error
                 $deleteConfirmed = confirm(
@@ -254,8 +254,8 @@ final class ErrorsTestCommand extends Command
             } else {
                 warning('⚠️  Error logging may have failed');
             }
-        } catch (Throwable $e) {
-            error("❌ Database logging failed: {$e->getMessage()}");
+        } catch (Throwable $throwable) {
+            error('❌ Database logging failed: '.$throwable->getMessage());
         }
     }
 }

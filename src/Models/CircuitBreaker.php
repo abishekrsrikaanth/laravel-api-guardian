@@ -124,12 +124,13 @@ final class CircuitBreaker extends Model
      */
     protected function getCacheKey(string $suffix = ''): string
     {
-        $key = "circuit_breaker:{$this->service}";
+        $key = 'circuit_breaker:'.$this->service;
         if ($this->operation) {
-            $key .= ":{$this->operation}";
+            $key .= ':'.$this->operation;
         }
+
         if ($suffix !== '' && $suffix !== '0') {
-            $key .= ":{$suffix}";
+            $key .= ':'.$suffix;
         }
 
         return $key;

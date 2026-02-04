@@ -5,6 +5,7 @@ declare(strict_types=1);
 // rector.php
 use Rector\Config\RectorConfig;
 use Rector\Php73\Rector\FuncCall\JsonThrowOnErrorRector;
+use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -12,6 +13,10 @@ return RectorConfig::configure()
         __DIR__ . '/database',
         __DIR__ . '/config',
         __DIR__ . '/routes',
+    ])
+    ->withRules([
+        JsonThrowOnErrorRector::class,
+        DeclareStrictTypesRector::class,
     ])
     ->withPreparedSets(
         deadCode: true,
@@ -22,9 +27,7 @@ return RectorConfig::configure()
         privatization: true,
         earlyReturn: true,
     )
-    ->withRules([
-        JsonThrowOnErrorRector::class
-    ])
+    ->withImportNames()
     ->withPhpSets(
         php84: true,
     );

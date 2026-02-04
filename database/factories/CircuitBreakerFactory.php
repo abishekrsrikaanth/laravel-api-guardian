@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use WorkDoneRight\ApiGuardian\Models\CircuitBreaker;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\WorkDoneRight\ApiGuardian\Models\CircuitBreaker>
+ * @extends Factory<CircuitBreaker>
  */
 final class CircuitBreakerFactory extends Factory
 {
     protected $model = CircuitBreaker::class;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         $states = ['closed', 'open', 'half_open'];

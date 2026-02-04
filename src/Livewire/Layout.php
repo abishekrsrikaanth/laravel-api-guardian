@@ -17,6 +17,8 @@ final class Layout extends Component
 
     /**
      * Get navigation items.
+     *
+     * @return array<int, array<string, string>>
      */
     public function getNavigationProperty(): array
     {

@@ -47,9 +47,13 @@ final class ErrorsStatsCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param  array<string, mixed>  $analytics
+     * @param  array<string, mixed>  $breakerStats
+     */
     private function displayStats(int $days, array $analytics, array $breakerStats): void
     {
-        $this->info("📊 API Guardian Statistics (Last {$days} Days)");
+        $this->info(sprintf('📊 API Guardian Statistics (Last %d Days)', $days));
         $this->newLine();
 
         // Error Stats
@@ -67,7 +71,7 @@ final class ErrorsStatsCommand extends Command
         $this->printStatLine('Unique Errors', $unique, 'blue');
         $this->printStatLine('Unresolved', $unresolved, $unresolved > 0 ? 'red' : 'green');
         $this->printStatLine('Resolved', $resolved, 'green');
-        $this->printStatLine('Resolution Rate', "{$resolutionRate}%", $resolutionRate > 80 ? 'green' : 'yellow');
+        $this->printStatLine('Resolution Rate', $resolutionRate.'%', $resolutionRate > 80 ? 'green' : 'yellow');
 
         if ($affectedUsers = Arr::get($analytics, 'affected_users')) {
             $this->printStatLine('Affected Users', $affectedUsers, 'magenta');
@@ -121,14 +125,14 @@ final class ErrorsStatsCommand extends Command
             $this->line('   No unresolved errors or open circuit breakers.');
         } elseif ($unresolved <= 5 && $openBreakers === 0) {
             $this->line('<fg=yellow>⚠️  System Health: GOOD</>');
-            $this->line("   {$unresolved} unresolved error(s) detected.");
+            $this->line(sprintf('   %s unresolved error(s) detected.', $unresolved));
         } elseif ($unresolved <= 10 || $openBreakers <= 2) {
             $this->line('<fg=yellow>⚠️  System Health: WARNING</>');
-            $this->line("   {$unresolved} unresolved error(s) and {$openBreakers} open breaker(s).");
+            $this->line(sprintf('   %d unresolved error(s) and %d open breaker(s).', $unresolved, $openBreakers));
             $this->line('   Consider investigating these issues.');
         } else {
             $this->error('❌ System Health: CRITICAL');
-            $this->line("   {$unresolved} unresolved error(s) and {$openBreakers} open breaker(s)!");
+            $this->line(sprintf('   %d unresolved error(s) and %d open breaker(s)!', $unresolved, $openBreakers));
             $this->line('   Immediate attention required.');
         }
 

@@ -70,10 +70,10 @@ final class CircuitBreakers extends Component
                 'type' => 'success',
                 'message' => 'Circuit breaker reset successfully',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -90,10 +90,10 @@ final class CircuitBreakers extends Component
                 'type' => 'success',
                 'message' => 'Success recorded for circuit breaker',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -110,10 +110,10 @@ final class CircuitBreakers extends Component
                 'type' => 'success',
                 'message' => 'Failure recorded for circuit breaker',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }

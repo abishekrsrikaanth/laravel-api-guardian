@@ -68,10 +68,10 @@ final class ErrorDetail extends Component
                 'type' => 'success',
                 'message' => 'Error marked as resolved',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -89,10 +89,10 @@ final class ErrorDetail extends Component
                 'message' => 'Error deleted successfully',
             ]);
             $this->redirect(route('api-guardian.livewire.errors'));
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }

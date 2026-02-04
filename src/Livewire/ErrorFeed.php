@@ -84,10 +84,10 @@ final class ErrorFeed extends Component
                 'type' => 'success',
                 'message' => 'Error marked as resolved',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -104,10 +104,10 @@ final class ErrorFeed extends Component
                 'type' => 'success',
                 'message' => 'Error deleted successfully',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -132,12 +132,12 @@ final class ErrorFeed extends Component
             $this->dispatch('errors-bulk-resolved', count: $count);
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => "{$count} errors marked as resolved",
+                'message' => $count.' errors marked as resolved',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }
@@ -162,12 +162,12 @@ final class ErrorFeed extends Component
             $this->dispatch('errors-bulk-deleted', count: $count);
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => "{$count} errors deleted successfully",
+                'message' => $count.' errors deleted successfully',
             ]);
-        } catch (Exception $e) {
+        } catch (Exception $exception) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage(),
+                'message' => $exception->getMessage(),
             ]);
         }
     }

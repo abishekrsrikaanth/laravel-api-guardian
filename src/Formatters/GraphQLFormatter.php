@@ -19,6 +19,8 @@ final class GraphQLFormatter extends AbstractFormatter
 {
     /**
      * Build the error response array.
+     *
+     * @return array<string, list<array>|null>
      */
     public function buildErrorResponse(Throwable $exception, int $statusCode): array
     {

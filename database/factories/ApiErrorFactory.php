@@ -4,26 +4,34 @@ declare(strict_types=1);
 
 namespace WorkDoneRight\ApiGuardian\Database\Factories;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use WorkDoneRight\ApiGuardian\Models\ApiError;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\WorkDoneRight\ApiGuardian\Models\ApiError>
+ * @extends Factory<ApiError>
  */
 final class ApiErrorFactory extends Factory
 {
     protected $model = ApiError::class;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [
-            'error_id' => 'err_'.uniqid().'_'.time(),
+            'error_id' => 'err_'.uniqid('', true).'_'.time(),
             'exception_class' => fake()->randomElement([
-                \Illuminate\Validation\ValidationException::class,
-                \Illuminate\Auth\AuthenticationException::class,
-                \Illuminate\Auth\Access\AuthorizationException::class,
-                \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
-                \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException::class,
+                ValidationException::class,
+                AuthenticationException::class,
+                AuthorizationException::class,
+                NotFoundHttpException::class,
+                AccessDeniedHttpException::class,
                 'Exception',
             ]),
             'error_code' => fake()->optional(0.7)->randomElement([

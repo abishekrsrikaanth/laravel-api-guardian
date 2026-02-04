@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WorkDoneRight\ApiGuardian\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 use WorkDoneRight\ApiGuardian\Services\ErrorService;
@@ -90,13 +91,14 @@ final class ErrorsExportCommand extends Command
         if ($status) {
             $filters['status'] = $status;
         }
+
         if ($days !== 0) {
             $filters['from_date'] = now()->subDays($days)->toDateString();
         }
 
         // Get errors with spinner
         $errors = spin(
-            fn (): \Illuminate\Pagination\LengthAwarePaginator => $this->errorService->getErrors($filters, 10000),
+            fn (): LengthAwarePaginator => $this->errorService->getErrors($filters, 10000),
             'Fetching errors for export...'
         );
 
@@ -106,12 +108,12 @@ final class ErrorsExportCommand extends Command
             return self::SUCCESS;
         }
 
-        info("Found {$errors->count()} error(s) to export.");
+        info(sprintf('Found %d error(s) to export.', $errors->count()));
 
         // Determine output path
         if (! $output) {
             $timestamp = now()->format('Y-m-d_His');
-            $output = storage_path("app/errors_export_{$timestamp}.{$format}");
+            $output = storage_path(sprintf('app/errors_export_%s.%s', $timestamp, $format));
         }
 
         // Ensure directory exists
@@ -125,13 +127,13 @@ final class ErrorsExportCommand extends Command
             fn () => match ($format) {
                 'csv' => $this->exportCsv($errors, $output),
                 'json' => $this->exportJson($errors, $output),
-                default => throw new InvalidArgumentException("Unsupported format: {$format}"),
+                default => throw new InvalidArgumentException('Unsupported format: '.$format),
             },
-            "Exporting to {$format}..."
+            sprintf('Exporting to %s...', $format)
         );
 
         info('✅ Export completed successfully!');
-        $this->line("   File: <fg=cyan>{$output}</>");
+        $this->line(sprintf('   File: <fg=cyan>%s</>', $output));
         $this->line('   Size: '.File::size($output).' bytes');
 
         return self::SUCCESS;

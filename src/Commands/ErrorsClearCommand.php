@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WorkDoneRight\ApiGuardian\Commands;
 
 use Illuminate\Console\Command;
+use WorkDoneRight\ApiGuardian\Models\ApiError;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -28,13 +29,13 @@ final class ErrorsClearCommand extends Command
 
         // Build criteria description
         $criteria = [];
-        $criteria[] = "older than {$days} days";
+        $criteria[] = sprintf('older than %d days', $days);
 
         $criteria[] = $status === 'resolved' ? 'resolved errors only' : 'all errors';
 
         $description = implode(' and ', $criteria);
 
-        info("Preparing to clear errors: {$description}");
+        info('Preparing to clear errors: '.$description);
 
         // Count errors to be deleted
         $count = $this->countErrorsToDelete($days, $status);
@@ -45,7 +46,7 @@ final class ErrorsClearCommand extends Command
             return self::SUCCESS;
         }
 
-        warning("Found {$count} error(s) to delete.");
+        warning(sprintf('Found %s error(s) to delete.', $count));
 
         // Confirm deletion using Laravel Prompts
         if (! $force) {
@@ -81,7 +82,7 @@ final class ErrorsClearCommand extends Command
 
     private function countErrorsToDelete(int $days, string $status): int
     {
-        $query = \WorkDoneRight\ApiGuardian\Models\ApiError::query()
+        $query = ApiError::query()
             ->where('created_at', '<', now()->subDays($days));
 
         if ($status === 'resolved') {
@@ -93,7 +94,7 @@ final class ErrorsClearCommand extends Command
 
     private function getErrorsToDelete(int $days, string $status)
     {
-        $query = \WorkDoneRight\ApiGuardian\Models\ApiError::query()
+        $query = ApiError::query()
             ->where('created_at', '<', now()->subDays($days));
 
         if ($status === 'resolved') {

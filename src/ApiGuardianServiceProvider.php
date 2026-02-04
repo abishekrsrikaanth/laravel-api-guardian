@@ -119,6 +119,8 @@ final class ApiGuardianServiceProvider extends PackageServiceProvider
 
     /**
      * Get the API route group configuration.
+     *
+     * @return array<string, mixed>
      */
     private function apiRouteConfiguration(): array
     {
@@ -131,10 +133,12 @@ final class ApiGuardianServiceProvider extends PackageServiceProvider
 
     /**
      * Get the web route group configuration for a specific framework.
+     *
+     * @return array<string, mixed>
      */
     private function webRouteConfiguration(string $framework): array
     {
-        $config = config("api-guardian.ui.frameworks.{$framework}", []);
+        $config = config('api-guardian.ui.frameworks.'.$framework, []);
 
         $routeConfig = [
             'prefix' => Arr::get($config, 'route_prefix', 'api-guardian'),

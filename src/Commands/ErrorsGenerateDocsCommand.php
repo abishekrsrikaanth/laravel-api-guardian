@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace WorkDoneRight\ApiGuardian\Commands;
 
+use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -35,12 +36,12 @@ final class ErrorsGenerateDocsCommand extends Command
         $output = $this->option('output') ?? storage_path('app/docs');
         $includeStats = $this->option('include-stats');
 
-        $this->info("Generating {$format} documentation...");
+        $this->info(sprintf('Generating %s documentation...', $format));
 
         // Ensure output directory exists
         if (! File::exists($output)) {
             File::makeDirectory($output, 0755, true);
-            $this->line("Created directory: {$output}");
+            $this->line('Created directory: '.$output);
         }
 
         // Discover exceptions
@@ -55,11 +56,11 @@ final class ErrorsGenerateDocsCommand extends Command
             'markdown' => $this->generateMarkdown($output, $exceptions, $stats, $topErrors),
             'html' => $this->generateHtml($output, $exceptions, $stats),
             'openapi' => $this->generateOpenApi($output, $exceptions),
-            default => throw new InvalidArgumentException("Unsupported format: {$format}"),
+            default => throw new InvalidArgumentException('Unsupported format: '.$format),
         };
 
         $this->info('✅ Documentation generated successfully!');
-        $this->line("   File: <fg=cyan>{$filename}</>");
+        $this->line(sprintf('   File: <fg=cyan>%s</>', $filename));
 
         return self::SUCCESS;
     }
@@ -77,6 +78,9 @@ final class ErrorsGenerateDocsCommand extends Command
         return $exceptions;
     }
 
+    /**
+     * @return array<int, array<string, int|string>>
+     */
     private function getStandardExceptions(): array
     {
         return [
@@ -178,6 +182,9 @@ final class ErrorsGenerateDocsCommand extends Command
         return null;
     }
 
+    /**
+     * @return array<string, string|int>
+     */
     private function extractExceptionInfo(ReflectionClass $reflection): array
     {
         $docComment = $reflection->getDocComment();
@@ -213,7 +220,7 @@ final class ErrorsGenerateDocsCommand extends Command
         }
 
         // Top errors
-        if ($topErrors && count($topErrors) > 0) {
+        if ($topErrors && $topErrors !== []) {
             $content .= "## Top Errors\n\n";
             $content .= "| Rank | Error | Count |\n";
             $content .= "|------|-------|-------|\n";
@@ -449,7 +456,7 @@ YAML;
         ], JSON_PRETTY_PRINT);
     }
 
-    private function now(): \Carbon\CarbonInterface
+    private function now(): CarbonInterface
     {
         return now();
     }

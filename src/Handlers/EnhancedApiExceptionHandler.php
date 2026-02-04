@@ -6,10 +6,13 @@ namespace WorkDoneRight\ApiGuardian\Handlers;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use WorkDoneRight\ApiGuardian\ApiGuardian;
+use WorkDoneRight\ApiGuardian\Exceptions\ApiException;
 use WorkDoneRight\ApiGuardian\Services\ErrorCollector;
+use WorkDoneRight\ApiGuardian\Services\SmartErrorRecovery;
 
 final class EnhancedApiExceptionHandler extends ExceptionHandler
 {
@@ -30,17 +33,17 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
             // Check if we can apply recovery strategies
             $recoveryResult = $this->attemptRecovery($exception, $request);
 
-            if ($recoveryResult instanceof \Illuminate\Http\Response) {
+            if ($recoveryResult instanceof Response) {
                 return $recoveryResult;
             }
 
             // Format the error response using existing Guardian formatters
             return $this->formatErrorResponse($exception, $request, $apiError);
 
-        } catch (Throwable $renderException) {
+        } catch (Throwable $throwable) {
             Log::error('Failed to render API error', [
                 'original_exception' => $exception->getMessage(),
-                'render_exception' => $renderException->getMessage(),
+                'render_exception' => $throwable->getMessage(),
             ]);
 
             return $this->fallbackErrorResponse();
@@ -52,6 +55,7 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
         if ($request->expectsJson()) {
             return true;
         }
+
         if ($request->is('api/*')) {
             return true;
         }
@@ -59,6 +63,9 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
         return $request->header('Accept') && str_contains($request->header('Accept'), 'json');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function collectErrorData(Throwable $exception): array
     {
         return [
@@ -126,6 +133,9 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
         return $meta;
     }
 
+    /**
+     * @param  array<int, array<string, int|list<mixed>|object|string>>  $trace
+     */
     protected function formatTrace(array $trace): array
     {
         if (! config('app.debug')) {
@@ -141,14 +151,14 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
         ], array_slice($trace, 0, 10)); // Limit to first 10 frames
     }
 
-    protected function attemptRecovery(Throwable $exception, Request $request): ?\Illuminate\Http\Response
+    protected function attemptRecovery(Throwable $exception, Request $request): ?Response
     {
         // Check if this is a request that can be recovered
         if (! $this->isRecoverableRequest($exception, $request)) {
             return null;
         }
 
-        $recovery = resolve(\WorkDoneRight\ApiGuardian\Services\SmartErrorRecovery::class);
+        $recovery = resolve(SmartErrorRecovery::class);
 
         // Try to execute recovery strategy
         try {
@@ -158,10 +168,10 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
                 // Re-execute the original request
                 fn () => app()->handle($request)
             );
-        } catch (Throwable $recoveryException) {
+        } catch (Throwable $throwable) {
             Log::warning('Recovery strategy failed', [
                 'original_error' => $exception->getMessage(),
-                'recovery_error' => $recoveryException->getMessage(),
+                'recovery_error' => $throwable->getMessage(),
             ]);
 
             return null;
@@ -198,22 +208,22 @@ final class EnhancedApiExceptionHandler extends ExceptionHandler
         return in_array($statusCode, $recoverableCodes);
     }
 
-    protected function formatErrorResponse(Throwable $exception, Request $request, $apiError): \Illuminate\Http\Response
+    protected function formatErrorResponse(Throwable $exception, Request $request, $apiError): Response
     {
         // Use the existing Guardian formatters
         $guardian = resolve(ApiGuardian::class);
 
-        if ($exception instanceof \WorkDoneRight\ApiGuardian\Exceptions\ApiException) {
+        if ($exception instanceof ApiException) {
             return $guardian->formatException($exception, $request);
         }
 
         // Create an ApiException from the generic exception
-        $apiException = \WorkDoneRight\ApiGuardian\Exceptions\ApiException::fromThrowable($exception);
+        $apiException = ApiException::fromThrowable($exception);
 
         return $guardian->formatException($apiException, $request);
     }
 
-    protected function fallbackErrorResponse(): \Illuminate\Http\Response
+    protected function fallbackErrorResponse(): Response
     {
         return response()->json([
             'status' => 'error',

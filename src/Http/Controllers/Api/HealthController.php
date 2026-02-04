@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace WorkDoneRight\ApiGuardian\Http\Controllers\Api;
 
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use WorkDoneRight\ApiGuardian\Models\CircuitBreaker;
 
-class HealthController
+final class HealthController
 {
     /**
      * Get system health status.
@@ -34,7 +35,7 @@ class HealthController
     /**
      * Check database connection.
      */
-    protected function checkDatabase(): array
+    private function checkDatabase(): array
     {
         try {
             DB::connection()->getPdo();
@@ -43,11 +44,11 @@ class HealthController
                 'healthy' => true,
                 'message' => 'Database connection successful',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return [
                 'healthy' => false,
                 'message' => 'Database connection failed',
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ];
         }
     }
@@ -55,7 +56,7 @@ class HealthController
     /**
      * Check cache system.
      */
-    protected function checkCache(): array
+    private function checkCache(): array
     {
         try {
             $key = 'api-guardian-health-check';
@@ -69,11 +70,11 @@ class HealthController
                 'healthy' => $retrieved === $value,
                 'message' => $retrieved === $value ? 'Cache working' : 'Cache test failed',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return [
                 'healthy' => false,
                 'message' => 'Cache system failed',
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ];
         }
     }
@@ -81,7 +82,7 @@ class HealthController
     /**
      * Check circuit breaker status.
      */
-    protected function checkCircuitBreakers(): array
+    private function checkCircuitBreakers(): array
     {
         try {
             $breakers = CircuitBreaker::all();
@@ -93,25 +94,25 @@ class HealthController
                 'healthy' => $open === 0,
                 'message' => $open === 0
                     ? 'All circuit breakers closed'
-                    : "{$open} circuit breaker(s) open",
+                    : $open.' circuit breaker(s) open',
                 'stats' => [
                     'total' => $total,
                     'healthy' => $healthy,
                     'open' => $open,
                     'half_open' => $breakers->where('state', 'half_open')->count(),
                 ],
-                'details' => $breakers->where('state', '!=', 'closed')->map(fn ($breaker) => [
+                'details' => $breakers->where('state', '!=', 'closed')->map(fn ($breaker): array => [
                     'service' => $breaker->service,
                     'operation' => $breaker->operation,
                     'state' => $breaker->state,
                     'can_attempt' => $breaker->canAttempt(),
                 ])->values()->toArray(),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $exception) {
             return [
                 'healthy' => false,
                 'message' => 'Circuit breaker check failed',
-                'error' => $e->getMessage(),
+                'error' => $exception->getMessage(),
             ];
         }
     }

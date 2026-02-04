@@ -40,9 +40,9 @@ final class ErrorService
                 Arr::has($filters, 'search'),
                 fn ($query) => $query->where(function ($q) use ($filters): void {
                     $search = Arr::get($filters, 'search');
-                    $q->where('message', 'like', "%{$search}%")
-                        ->orWhere('endpoint', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
+                    $q->where('message', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('endpoint', 'like', sprintf('%%%s%%', $search))
+                        ->orWhere('code', 'like', sprintf('%%%s%%', $search));
                 })
             )
             ->when(
@@ -85,7 +85,7 @@ final class ErrorService
 
         // Check if already resolved
         if ($error->resolved_at) {
-            throw new InvalidArgumentException("Error {$id} is already resolved");
+            throw new InvalidArgumentException(sprintf('Error %s is already resolved', $id));
         }
 
         $error->resolved_at = now();
@@ -142,6 +142,8 @@ final class ErrorService
 
     /**
      * Get error statistics.
+     *
+     * @return array<string, mixed>
      */
     public function getStats(): array
     {

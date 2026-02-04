@@ -86,6 +86,8 @@ final class Handler extends ExceptionHandler
 
     /**
      * Report to webhook.
+     *
+     * @param  array<string, mixed>  $config
      */
     protected function reportToWebhook(Throwable $exception, array $config): void
     {

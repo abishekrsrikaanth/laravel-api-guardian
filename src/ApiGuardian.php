@@ -7,6 +7,7 @@ namespace WorkDoneRight\ApiGuardian;
 use Illuminate\Http\JsonResponse;
 use Throwable;
 use WorkDoneRight\ApiGuardian\Contracts\ErrorFormatterContract;
+use WorkDoneRight\ApiGuardian\Exceptions\ApiException;
 use WorkDoneRight\ApiGuardian\Formatters\GraphQLFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\JSendFormatter;
 use WorkDoneRight\ApiGuardian\Formatters\JsonApiFormatter;
@@ -26,15 +27,15 @@ final class ApiGuardian
     /**
      * Create a new API exception with fluent interface.
      */
-    public static function exception(string $message = ''): Exceptions\ApiException
+    public static function exception(string $message = ''): ApiException
     {
-        return new Exceptions\ApiException($message);
+        return new ApiException($message);
     }
 
     /**
      * Quick helper to create a not found exception.
      */
-    public static function notFound(string $message = 'Resource not found'): Exceptions\ApiException
+    public static function notFound(string $message = 'Resource not found'): ApiException
     {
         return self::exception($message)
             ->statusCode(404)
@@ -44,7 +45,7 @@ final class ApiGuardian
     /**
      * Quick helper to create an unauthorized exception.
      */
-    public static function unauthorized(string $message = 'Unauthorized'): Exceptions\ApiException
+    public static function unauthorized(string $message = 'Unauthorized'): ApiException
     {
         return self::exception($message)
             ->statusCode(401)
@@ -54,7 +55,7 @@ final class ApiGuardian
     /**
      * Quick helper to create a forbidden exception.
      */
-    public static function forbidden(string $message = 'Forbidden'): Exceptions\ApiException
+    public static function forbidden(string $message = 'Forbidden'): ApiException
     {
         return self::exception($message)
             ->statusCode(403)
@@ -64,7 +65,7 @@ final class ApiGuardian
     /**
      * Quick helper to create a validation exception.
      */
-    public static function validationFailed(string $message = 'Validation failed'): Exceptions\ApiException
+    public static function validationFailed(string $message = 'Validation failed'): ApiException
     {
         return self::exception($message)
             ->statusCode(422)
@@ -74,7 +75,7 @@ final class ApiGuardian
     /**
      * Quick helper to create a server error exception.
      */
-    public static function serverError(string $message = 'Internal server error'): Exceptions\ApiException
+    public static function serverError(string $message = 'Internal server error'): ApiException
     {
         return self::exception($message)
             ->statusCode(500)
@@ -84,7 +85,7 @@ final class ApiGuardian
     /**
      * Quick helper to create a bad request exception.
      */
-    public static function badRequest(string $message = 'Bad request'): Exceptions\ApiException
+    public static function badRequest(string $message = 'Bad request'): ApiException
     {
         return self::exception($message)
             ->statusCode(400)
@@ -94,7 +95,7 @@ final class ApiGuardian
     /**
      * Quick helper to create a rate limit exception.
      */
-    public static function rateLimitExceeded(string $message = 'Rate limit exceeded', ?int $retryAfter = null): Exceptions\ApiException
+    public static function rateLimitExceeded(string $message = 'Rate limit exceeded', ?int $retryAfter = null): ApiException
     {
         $exception = self::exception($message)
             ->statusCode(429)

@@ -55,6 +55,9 @@ final class ErrorCollector implements ErrorCollectorContract
         });
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getAnalytics(int $days = 7): array
     {
         $startDate = now()->subDays($days);
@@ -112,7 +115,7 @@ final class ErrorCollector implements ErrorCollectorContract
         };
 
         $trends = ApiError::where('created_at', '>=', $startDate)
-            ->selectRaw("DATE_FORMAT(created_at, '{$format}') as period, COUNT(*) as count")
+            ->selectRaw(sprintf("DATE_FORMAT(created_at, '%s') as period, COUNT(*) as count", $format))
             ->groupBy('period')
             ->orderBy('period')
             ->get();
@@ -165,6 +168,9 @@ final class ErrorCollector implements ErrorCollectorContract
         return 'err_'.uniqid('', true).'_'.time();
     }
 
+    /**
+     * @param  array<string, list<(string | null)>>  $headers
+     */
     private function sanitizeHeaders(array $headers): array
     {
         $sensitiveHeaders = $this->getSensitiveHeaders();

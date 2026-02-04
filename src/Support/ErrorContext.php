@@ -24,12 +24,15 @@ final class ErrorContext
         if ($instance->shouldIncludeErrorId()) {
             $context = Arr::set($context, 'error_id', self::generateErrorId());
         }
+
         if ($instance->shouldIncludeTimestamp()) {
             $context = Arr::set($context, 'timestamp', now()->toIso8601String());
         }
+
         if ($instance->shouldIncludeRequestId()) {
             $context = Arr::set($context, 'request_id', request()->header('X-Request-ID') ?? Str::uuid()->toString());
         }
+
         if ($instance->shouldIncludeUserInfo() && auth()->check()) {
             return Arr::set($context, 'user', self::buildUserInfo());
         }
@@ -39,6 +42,8 @@ final class ErrorContext
 
     /**
      * Build request metadata.
+     *
+     * @return array<string, string|null>
      */
     public static function buildRequestMeta(): array
     {
@@ -99,7 +104,7 @@ final class ErrorContext
         $patterns = $instance->getPiiRedactionPatterns();
 
         foreach ($patterns as $type => $pattern) {
-            $text = preg_replace($pattern, "[$type:REDACTED]", (string) $text);
+            $text = preg_replace($pattern, sprintf('[%s:REDACTED]', $type), (string) $text);
         }
 
         return $text;
@@ -115,6 +120,8 @@ final class ErrorContext
 
     /**
      * Build user information (without sensitive data).
+     *
+     * @return array<string, mixed>
      */
     private static function buildUserInfo(): array
     {

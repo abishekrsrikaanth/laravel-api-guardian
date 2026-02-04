@@ -7,6 +7,7 @@ namespace WorkDoneRight\ApiGuardian\Exceptions;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Throwable;
+use WorkDoneRight\ApiGuardian\Contracts\RecoveryStrategyContract;
 
 final class ApiException extends Exception
 {
@@ -295,7 +296,7 @@ final class ApiException extends Exception
     public function getRecoverySuggestions(): array
     {
         if ($this->recoverable) {
-            $recovery = resolve(\WorkDoneRight\ApiGuardian\Contracts\RecoveryStrategyContract::class);
+            $recovery = resolve(RecoveryStrategyContract::class);
 
             return $recovery->generateRecoverySuggestion($this);
         }

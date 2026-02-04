@@ -32,7 +32,7 @@ final class ErrorsAnalyzeCommand extends Command
         $topLimit = (int) $this->option('top');
         $format = $this->option('format');
 
-        info("📊 Analyzing error patterns for the last {$days} days...");
+        info(sprintf('📊 Analyzing error patterns for the last %d days...', $days));
         $this->newLine();
 
         if ($format === 'json') {
@@ -82,6 +82,9 @@ final class ErrorsAnalyzeCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param  array<string, mixed>  $analytics
+     */
     private function displaySummary(array $analytics): void
     {
         $this->info('=== Summary ===');
@@ -92,14 +95,14 @@ final class ErrorsAnalyzeCommand extends Command
         $resolved = Arr::get($analytics, 'resolved_count', 0);
         $resolutionRate = $total > 0 ? round(($resolved / $total) * 100, 1) : 0;
 
-        $this->line("Total Errors: <fg=cyan>{$total}</>");
-        $this->line("Unique Errors: <fg=cyan>{$unique}</>");
-        $this->line("Unresolved: <fg=red>{$unresolved}</>");
-        $this->line("Resolved: <fg=green>{$resolved}</>");
-        $this->line("Resolution Rate: <fg=yellow>{$resolutionRate}%</>");
+        $this->line(sprintf('Total Errors: <fg=cyan>%s</>', $total));
+        $this->line(sprintf('Unique Errors: <fg=cyan>%s</>', $unique));
+        $this->line(sprintf('Unresolved: <fg=red>%s</>', $unresolved));
+        $this->line(sprintf('Resolved: <fg=green>%s</>', $resolved));
+        $this->line(sprintf('Resolution Rate: <fg=yellow>%s%%</>', $resolutionRate));
 
         if ($affectedUsers = Arr::get($analytics, 'affected_users')) {
-            $this->line("Affected Users: <fg=magenta>{$affectedUsers}</>");
+            $this->line(sprintf('Affected Users: <fg=magenta>%s</>', $affectedUsers));
         }
 
         if ($avgResponseTime = Arr::get($analytics, 'avg_response_time')) {
@@ -127,7 +130,7 @@ final class ErrorsAnalyzeCommand extends Command
                 '#'.($index + 1),
                 $message,
                 $endpoint,
-                "<fg=red>{$count}</>",
+                sprintf('<fg=red>%s</>', $count),
             ];
         }
 
@@ -157,10 +160,10 @@ final class ErrorsAnalyzeCommand extends Command
             };
 
             $rows[] = [
-                "<fg={$color}>{$statusCode}</>",
+                sprintf('<fg=%s>%s</>', $color, $statusCode),
                 $count,
                 $this->renderBar($percentage, 30),
-                "{$percentage}%",
+                $percentage.'%',
             ];
         }
 
@@ -184,14 +187,14 @@ final class ErrorsAnalyzeCommand extends Command
             $previous = array_slice($counts, -6, 3);
 
             $recentAvg = array_sum($recent) / count($recent);
-            $previousAvg = count($previous) > 0 ? array_sum($previous) / count($previous) : 0;
+            $previousAvg = $previous !== [] ? array_sum($previous) / count($previous) : 0;
 
             if ($previousAvg > 0) {
                 $change = (($recentAvg - $previousAvg) / $previousAvg) * 100;
                 $arrow = $change > 0 ? '↑' : '↓';
                 $color = $change > 0 ? 'red' : 'green';
 
-                $this->line("Trend: <fg={$color}>{$arrow} ".abs(round($change, 1)).'% from previous period</>');
+                $this->line(sprintf('Trend: <fg=%s>%s ', $color, $arrow).abs(round($change, 1)).'% from previous period</>');
             }
         }
 
@@ -202,10 +205,14 @@ final class ErrorsAnalyzeCommand extends Command
             $count = Arr::get($trend, 'count');
             $bar = $this->renderBar($count, 20, max($counts));
 
-            $this->line("{$period}: {$bar} ({$count})");
+            $this->line(sprintf('%s: %s (%s)', $period, $bar, $count));
         }
     }
 
+    /**
+     * @param  array<int, mixed>  $topErrors
+     * @param  array<string, mixed>  $analytics
+     */
     private function displayRecommendations(array $analytics, array $topErrors): void
     {
         $this->info('=== Recommendations ===');
@@ -214,24 +221,24 @@ final class ErrorsAnalyzeCommand extends Command
         $total = Arr::get($analytics, 'total_errors', 0);
 
         if ($unresolved > 10) {
-            $this->warn("🔥 {$unresolved} unresolved errors need attention!");
+            $this->warn(sprintf('🔥 %s unresolved errors need attention!', $unresolved));
             $this->line('   Run: php artisan errors:list --status=unresolved');
         }
 
-        if (count($topErrors) > 0) {
+        if ($topErrors !== []) {
             $topError = $topErrors[0];
             $count = Arr::get($topError, 'occurrence_count', Arr::get($topError, 'count', 0));
 
             if ($count > 5) {
                 $message = $this->truncate(Arr::get($topError, 'message', ''), 60);
-                $this->warn("🎯 Most frequent error: \"{$message}\" ({$count} times)");
+                $this->warn(sprintf('🎯 Most frequent error: "%s" (%s times)', $message, $count));
                 $this->line('   Consider investigating this error first.');
             }
         }
 
         $resolutionRate = $total > 0 ? (Arr::get($analytics, 'resolved_count', 0) / $total) * 100 : 0;
         if ($resolutionRate < 50) {
-            $this->warn("⚠️  Low resolution rate ({$resolutionRate}%). Consider resolving old errors.");
+            $this->warn(sprintf('⚠️  Low resolution rate (%s%%). Consider resolving old errors.', $resolutionRate));
             $this->line('   Run: php artisan errors:clear --days=30 --status=resolved');
         }
 
@@ -243,7 +250,7 @@ final class ErrorsAnalyzeCommand extends Command
     private function displayJson(int $days, int $topLimit): int
     {
         $data = [
-            'period' => "{$days} days",
+            'period' => $days.' days',
             'analytics' => $this->errorCollector->getAnalytics($days),
             'top_errors' => $this->errorCollector->getTopErrors($topLimit, $days),
             'distribution' => $this->errorCollector->getStatusCodeDistribution($days),
